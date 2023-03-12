@@ -1,28 +1,38 @@
+import contextlib
 import weakref
 
 import numpy as np
 
 
+# =============================================================================
+# Config
+# =============================================================================
 class Config:
     enable_backprop = True
 
 
-def as_array(x):
-    if np.isscalar(x):
-        return np.array(x)
-    return x
+@contextlib.contextmanager
+def using_config(name, value):
+    old_value = getattr(Config, name)
+    setattr(Config, name, value)
+    try:
+        yield
+    finally:
+        setattr(Config, name, old_value)
 
 
-def as_variable(obj):
-    if isinstance(obj, Variable):
-        return obj
-    return Variable(obj)
+def no_grad():
+    return using_config("enable_backprop", False)
 
 
+# =============================================================================
+# Variable / Function
+# =============================================================================
 class Variable:
     __array_priority__ = 200
 
     def __init__(self, data, name=None):
+        """data와 grad 모두 ndarray 인스턴스로 저장!"""
         if data is not None:
             if not isinstance(data, np.ndarray):
                 raise TypeError(f"{type(data)}은(는) 지원하지 않습니다.")
@@ -37,6 +47,7 @@ class Variable:
         self.generation = func.generation + 1
 
     def backward(self, retain_grad=False):
+        """backward 계산 후 미분값을 입력변수의 grad로 설정"""
         if self.grad is None:
             self.grad = np.ones_like(self.data)
 
@@ -102,8 +113,21 @@ class Variable:
         return f"variable('{p}')"
 
 
+def as_array(x):
+    if np.isscalar(x):
+        return np.array(x)
+    return x
+
+
+def as_variable(obj):
+    if isinstance(obj, Variable):
+        return obj
+    return Variable(obj)
+
+
 class Function:
     def __call__(self, *inputs):
+        """forward 계산 및 Variable과 Function의 connection을 만듦(creator)"""
         inputs = [as_variable(x) for x in inputs]
 
         xs = [x.data for x in inputs]
@@ -128,6 +152,9 @@ class Function:
         raise NotImplementedError()
 
 
+# =============================================================================
+# + - * / and Operator Overload
+# =============================================================================
 class Add(Function):
     def forward(self, x0, x1):
         y = x0 + x1
@@ -260,13 +287,14 @@ def pow(x, c):
     return Pow(c)(x)
 
 
-Variable.__mul__ = mul
-Variable.__rmul__ = mul
-Variable.__add__ = add
-Variable.__radd__ = add
-Variable.__neg__ = neg
-Variable.__sub__ = sub
-Variable.__rsub__ = rsub
-Variable.__truediv__ = div
-Variable.__rtruediv__ = rdiv
-Variable.__pow__ = pow
+def setup_variable():
+    Variable.__mul__ = mul
+    Variable.__rmul__ = mul
+    Variable.__add__ = add
+    Variable.__radd__ = add
+    Variable.__neg__ = neg
+    Variable.__sub__ = sub
+    Variable.__rsub__ = rsub
+    Variable.__truediv__ = div
+    Variable.__rtruediv__ = rdiv
+    Variable.__pow__ = pow

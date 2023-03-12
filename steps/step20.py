@@ -4,7 +4,7 @@ if "__file__" in globals():
 
     file_path = os.path.dirname(__file__)
     sys.path.append(os.path.join(file_path, ".."))
-from dezero.util import *
+from dezero.core_simple import *
 
 a = Variable(np.array(3.0))
 b = Variable(np.array(2.0))

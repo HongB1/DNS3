@@ -6,7 +6,7 @@ if "__file__" in globals():
     sys.path.append(os.path.join(file_path, ".."))
 import unittest
 
-from dezero.util import *
+from dezero.core_simple import *
 
 
 def numerical_diff(f, x, eps=1e-4):

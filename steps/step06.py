@@ -1,4 +1,4 @@
-from dezero.util import *
+from dezero.core_simple import *
 
 
 class Square(Function):
