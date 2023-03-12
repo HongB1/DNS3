@@ -1,4 +1,4 @@
- import numpy as np
+import numpy as np
 
 
 class Config:
@@ -70,6 +70,26 @@ class Variable:
     def shape(self):
         return self.data.shape
 
+    @property
+    def ndim(self):
+        return self.data.ndim
+
+    @property
+    def size(self):
+        return self.data.size
+
+    @property
+    def dtype(self):
+        return self.data.dtype
+
+    def __len__(self):
+        return len(self.data)
+
+    def __repr__(self):
+        if self.data is None:
+            return 'variable(None'
+        p = str(self.data).replace('\n', '\n' + ' ' * 9)
+        return f"variable(' {p} ')"
 
 import weakref
 
@@ -114,8 +134,8 @@ class Square(Function):
 
     def backward(self, gy):
         x = self.inputs[0].data
-        gx = 2 * x * gy # backward할 때 입력값인 x는 저장해두고, 출력값의 gy를 인풋하여 계산해줌
-        return gx # 그렇게 하면 입력값 x에서의 gx를 구할 수 있음
+        gx = 2 * x * gy  # backward할 때 입력값인 x는 저장해두고, 출력값의 gy를 인풋하여 계산해줌
+        return gx  # 그렇게 하면 입력값 x에서의 gx를 구할 수 있음
 
 
 class Exp(Function):
