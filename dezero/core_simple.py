@@ -1,6 +1,7 @@
-import weakref
-import numpy as np
 import contextlib
+import weakref
+
+import numpy as np
 
 
 # =============================================================================
@@ -21,7 +22,7 @@ def using_config(name, value):
 
 
 def no_grad():
-    return using_config('enable_backprop', False)
+    return using_config("enable_backprop", False)
 
 
 # =============================================================================
@@ -31,10 +32,10 @@ class Variable:
     __array_priority__ = 200
 
     def __init__(self, data, name=None):
-        """ data와 grad 모두 ndarray 인스턴스로 저장! """
+        """data와 grad 모두 ndarray 인스턴스로 저장!"""
         if data is not None:
             if not isinstance(data, np.ndarray):
-                raise TypeError('{} is not supported'.format(type(data)))
+                raise TypeError("{} is not supported".format(type(data)))
 
         self.data = data
         self.name = name
@@ -63,9 +64,9 @@ class Variable:
 
     def __repr__(self):
         if self.data is None:
-            return 'variable(None)'
-        p = str(self.data).replace('\n', '\n' + ' ' * 9)
-        return 'variable(' + p + ')'
+            return "variable(None)"
+        p = str(self.data).replace("\n", "\n" + " " * 9)
+        return "variable(" + p + ")"
 
     def set_creator(self, func):
         self.creator = func
@@ -75,7 +76,7 @@ class Variable:
         self.grad = None
 
     def backward(self, retain_grad=False):
-        """ backward 계산 후 미분값을 입력변수의 grad로 설정 """
+        """backward 계산 후 미분값을 입력변수의 grad로 설정"""
         if self.grad is None:
             self.grad = np.ones_like(self.data)
 
@@ -125,7 +126,7 @@ def as_array(x):
 
 class Function:
     def __call__(self, *inputs):
-        """ forward 계산 및 Variable과 Function의 connection 만듦(creator) """
+        """forward 계산 및 Variable과 Function의 connection 만듦(creator)"""
         inputs = [as_variable(x) for x in inputs]
         # (1) Calculate forward pass
         xs = [x.data for x in inputs]
@@ -222,7 +223,7 @@ class Div(Function):
     def backward(self, gy):
         x0, x1 = self.inputs[0].data, self.inputs[1].data
         gx0 = gy / x1
-        gx1 = gy * (-x0 / x1 ** 2)
+        gx1 = gy * (-x0 / x1**2)
         return gx0, gx1
 
 
@@ -241,7 +242,7 @@ class Pow(Function):
         self.c = c
 
     def forward(self, x):
-        y = x ** self.c
+        y = x**self.c
         return y
 
     def backward(self, gy):
