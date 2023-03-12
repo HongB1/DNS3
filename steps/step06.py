@@ -3,7 +3,7 @@ from dezero.util import *
 
 class Square(Function):
     def forward(self, x):
-        y = x ** 2
+        y = x**2
         return y
 
     def backward(self, gy):

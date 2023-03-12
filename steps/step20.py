@@ -1,8 +1,9 @@
-if '__file__' in globals():
-    import os, sys
+if "__file__" in globals():
+    import os
+    import sys
 
     file_path = os.path.dirname(__file__)
-    sys.path.append(os.path.join(file_path, '..'))
+    sys.path.append(os.path.join(file_path, ".."))
 from dezero.util import *
 
 a = Variable(np.array(3.0))

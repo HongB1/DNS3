@@ -1,7 +1,9 @@
-if '__file__' in globals():
-    import os, sys
+if "__file__" in globals():
+    import os
+    import sys
+
     file_path = os.path.dirname(__file__)
-    sys.path.append(os.path.join(file_path, '..'))
+    sys.path.append(os.path.join(file_path, ".."))
 from dezero.util import *
 
 # xs = [Variable(np.array(2)), Variable(np.array(3))]
@@ -17,4 +19,3 @@ z.backward()
 print(z.data)
 print(x.grad)
 print(y.grad)
-

@@ -15,7 +15,7 @@ class Variable:
     def __init__(self, data, name=None):
         if data is not None:
             if not isinstance(data, np.ndarray):
-                raise TypeError(f'{type(data)}은(는) 지원하지 않습니다.')
+                raise TypeError(f"{type(data)}은(는) 지원하지 않습니다.")
         self.data = data
         self.name = name
         self.grad = None
@@ -87,12 +87,9 @@ class Variable:
 
     def __repr__(self):
         if self.data is None:
-            return 'variable(None'
-        p = str(self.data).replace('\n', '\n' + ' ' * 9)
+            return "variable(None"
+        p = str(self.data).replace("\n", "\n" + " " * 9)
         return f"variable('{p}')"
-
-    def __mul__(self, other):
-        return mul(self, other)
 
 
 import weakref
@@ -133,7 +130,7 @@ class Add(Function):
 
 class Square(Function):
     def forward(self, x):
-        y = x ** 2
+        y = x**2
         return y
 
     def backward(self, gy):
@@ -175,8 +172,10 @@ class Mul(Function):
         x1 = self.inputs[1].data
         return gy * x1, gy * x0
 
+
 def mul(x0, x1):
     return Mul()(x0, x1)
+
 
 Variable.__mul__ = mul
 Variable.__add__ = add

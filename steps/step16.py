@@ -1,11 +1,13 @@
 # 같은 변수 반복 사용
 
-if '__file__' in globals():
-    import os, sys
+if "__file__" in globals():
+    import os
+    import sys
 
     file_path = os.path.dirname(__file__)
-    sys.path.append(os.path.join(file_path, '..'))
+    sys.path.append(os.path.join(file_path, ".."))
 from dezero.util import *
+
 #
 # generations = [2, 0, 1, 4, 2]
 # funcs = []
