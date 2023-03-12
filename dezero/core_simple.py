@@ -1,7 +1,6 @@
-import contextlib
 import weakref
-
 import numpy as np
+import contextlib
 
 
 # =============================================================================
@@ -22,7 +21,7 @@ def using_config(name, value):
 
 
 def no_grad():
-    return using_config("enable_backprop", False)
+    return using_config('enable_backprop', False)
 
 
 # =============================================================================
@@ -32,60 +31,16 @@ class Variable:
     __array_priority__ = 200
 
     def __init__(self, data, name=None):
-        """data와 grad 모두 ndarray 인스턴스로 저장!"""
+        """ data와 grad 모두 ndarray 인스턴스로 저장! """
         if data is not None:
             if not isinstance(data, np.ndarray):
-                raise TypeError(f"{type(data)}은(는) 지원하지 않습니다.")
+                raise TypeError('{} is not supported'.format(type(data)))
+
         self.data = data
         self.name = name
         self.grad = None
         self.creator = None
         self.generation = 0
-
-    def set_creator(self, func):
-        self.creator = func
-        self.generation = func.generation + 1
-
-    def backward(self, retain_grad=False):
-        """backward 계산 후 미분값을 입력변수의 grad로 설정"""
-        if self.grad is None:
-            self.grad = np.ones_like(self.data)
-
-        # funcs = [self.creator]
-        funcs = []
-        seen_set = set()
-
-        def add_func(f):
-            if f not in seen_set:
-                funcs.append(f)
-                seen_set.add(f)
-                funcs.sort(key=lambda x: x.generation)
-
-        add_func(self.creator)
-
-        while funcs:
-            f = funcs.pop()
-            gys = [output().grad for output in f.outputs]
-            gxs = f.backward(*gys)
-            if not isinstance(gxs, tuple):
-                gxs = (gxs,)
-
-            for x, gx in zip(f.inputs, gxs):
-                if x.grad is None:
-                    x.grad = gx
-                else:
-                    x.grad = x.grad + gx
-
-                if x.creator is not None:
-                    add_func(x.creator)
-                    # funcs.append(x.creator)
-
-            if not retain_grad:
-                for y in f.outputs:
-                    y().grad = None
-
-    def cleargrad(self):
-        self.grad = None
 
     @property
     def shape(self):
@@ -108,15 +63,52 @@ class Variable:
 
     def __repr__(self):
         if self.data is None:
-            return "variable(None"
-        p = str(self.data).replace("\n", "\n" + " " * 9)
-        return f"variable('{p}')"
+            return 'variable(None)'
+        p = str(self.data).replace('\n', '\n' + ' ' * 9)
+        return 'variable(' + p + ')'
 
+    def set_creator(self, func):
+        self.creator = func
+        self.generation = func.generation + 1
 
-def as_array(x):
-    if np.isscalar(x):
-        return np.array(x)
-    return x
+    def cleargrad(self):
+        self.grad = None
+
+    def backward(self, retain_grad=False):
+        """ backward 계산 후 미분값을 입력변수의 grad로 설정 """
+        if self.grad is None:
+            self.grad = np.ones_like(self.data)
+
+        funcs = []
+        seen_set = set()
+
+        def add_func(f):
+            if f not in seen_set:
+                funcs.append(f)
+                seen_set.add(f)
+                funcs.sort(key=lambda x: x.generation)
+
+        add_func(self.creator)
+
+        while funcs:
+            f = funcs.pop()
+            gys = [output().grad for output in f.outputs]  # output is weakref
+            gxs = f.backward(*gys)
+            if not isinstance(gxs, tuple):
+                gxs = (gxs,)
+
+            for x, gx in zip(f.inputs, gxs):
+                if x.grad is None:
+                    x.grad = gx
+                else:
+                    x.grad = x.grad + gx
+
+                if x.creator is not None:
+                    add_func(x.creator)
+
+            if not retain_grad:
+                for y in f.outputs:
+                    y().grad = None  # y is weakref
 
 
 def as_variable(obj):
@@ -125,11 +117,17 @@ def as_variable(obj):
     return Variable(obj)
 
 
+def as_array(x):
+    if np.isscalar(x):
+        return np.array(x)
+    return x
+
+
 class Function:
     def __call__(self, *inputs):
-        """forward 계산 및 Variable과 Function의 connection을 만듦(creator)"""
+        """ forward 계산 및 Variable과 Function의 connection 만듦(creator) """
         inputs = [as_variable(x) for x in inputs]
-
+        # (1) Calculate forward pass
         xs = [x.data for x in inputs]
         ys = self.forward(*xs)
         if not isinstance(ys, tuple):
@@ -138,9 +136,10 @@ class Function:
 
         if Config.enable_backprop:
             self.generation = max([x.generation for x in inputs])
+            # (2) Create connection
             for output in outputs:
-                output.set_creator(self)  # 출력 변수에 창조자 설정
-            self.inputs = inputs  # 입력 변수를 기억(보관)
+                output.set_creator(self)
+            self.inputs = inputs
             self.outputs = [weakref.ref(output) for output in outputs]
 
         return outputs if len(outputs) > 1 else outputs[0]
@@ -164,36 +163,6 @@ class Add(Function):
         return gy, gy
 
 
-class Square(Function):
-    def forward(self, x):
-        y = x**2
-        return y
-
-    def backward(self, gy):
-        x = self.inputs[0].data
-        gx = 2 * x * gy  # backward할 때 입력값인 x는 저장해두고, 출력값의 gy를 인풋하여 계산해줌
-        return gx  # 그렇게 하면 입력값 x에서의 gx를 구할 수 있음
-
-
-class Exp(Function):
-    def forward(self, x):
-        y = np.exp(x)
-        return y
-
-    def backward(self, gy):
-        x = self.input.data
-        gx = np.exp(x) * gy
-        return gx
-
-
-def square(x):
-    return Square()(x)
-
-
-def exp(x):
-    return Exp()(x)
-
-
 def add(x0, x1):
     x1 = as_array(x1)
     return Add()(x0, x1)
@@ -205,19 +174,18 @@ class Mul(Function):
         return y
 
     def backward(self, gy):
-        x0 = self.inputs[0].data
-        x1 = self.inputs[1].data
+        x0, x1 = self.inputs[0].data, self.inputs[1].data
         return gy * x1, gy * x0
 
 
 def mul(x0, x1):
+    x1 = as_array(x1)
     return Mul()(x0, x1)
 
 
 class Neg(Function):
     def forward(self, x):
-        y = -x
-        return y
+        return -x
 
     def backward(self, gy):
         return -gy
@@ -254,7 +222,7 @@ class Div(Function):
     def backward(self, gy):
         x0, x1 = self.inputs[0].data, self.inputs[1].data
         gx0 = gy / x1
-        gx1 = gy * (-x0 / x1**2)
+        gx1 = gy * (-x0 / x1 ** 2)
         return gx0, gx1
 
 
@@ -273,12 +241,13 @@ class Pow(Function):
         self.c = c
 
     def forward(self, x):
-        y = x**self.c
+        y = x ** self.c
         return y
 
     def backward(self, gy):
         x = self.inputs[0].data
         c = self.c
+
         gx = c * x ** (c - 1) * gy
         return gx
 
@@ -288,10 +257,10 @@ def pow(x, c):
 
 
 def setup_variable():
-    Variable.__mul__ = mul
-    Variable.__rmul__ = mul
     Variable.__add__ = add
     Variable.__radd__ = add
+    Variable.__mul__ = mul
+    Variable.__rmul__ = mul
     Variable.__neg__ = neg
     Variable.__sub__ = sub
     Variable.__rsub__ = rsub
