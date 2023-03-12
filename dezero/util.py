@@ -12,11 +12,12 @@ def as_array(x):
 
 
 class Variable:
-    def __init__(self, data):
+    def __init__(self, data, name=None):
         if data is not None:
             if not isinstance(data, np.ndarray):
                 raise TypeError(f'{type(data)}은(는) 지원하지 않습니다.')
         self.data = data
+        self.name = name
         self.grad = None
         self.creator = None
         self.generation = 0
@@ -64,6 +65,10 @@ class Variable:
 
     def cleargrad(self):
         self.grad = None
+
+    @property
+    def shape(self):
+        return self.data.shape
 
 
 import weakref
