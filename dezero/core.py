@@ -1,7 +1,9 @@
 import contextlib
 import weakref
-import dezero
+
 import numpy as np
+
+import dezero
 
 
 # =============================================================================
@@ -98,7 +100,7 @@ class Variable:
             # 역전파 계산(메인 처리)
             gys = [output().grad for output in f.outputs]  # output is weakref
 
-            with using_config('enable_backprop', create_graph):
+            with using_config("enable_backprop", create_graph):
                 gxs = f.backward(*gys)  # 메인 backward
                 if not isinstance(gxs, tuple):
                     gxs = (gxs,)
@@ -228,7 +230,7 @@ class Div(Function):
     def backward(self, gy):
         x0, x1 = self.inputs
         gx0 = gy / x1
-        gx1 = gy * (-x0 / x1 ** 2)
+        gx1 = gy * (-x0 / x1**2)
         return gx0, gx1
 
 
@@ -247,11 +249,11 @@ class Pow(Function):
         self.c = c
 
     def forward(self, x):
-        y = x ** self.c
+        y = x**self.c
         return y
 
     def backward(self, gy):
-        x, = self.inputs
+        (x,) = self.inputs
         c = self.c
 
         gx = c * x ** (c - 1) * gy
