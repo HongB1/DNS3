@@ -1,6 +1,6 @@
 import contextlib
 import weakref
-
+import dezero
 import numpy as np
 
 
@@ -80,6 +80,7 @@ class Variable:
         if self.grad is None:
             # self.grad = np.ones_like(self.data)
             self.grad = Variable(np.ones_like(self.data))
+
         funcs = []
         seen_set = set()
 
@@ -98,7 +99,7 @@ class Variable:
             gys = [output().grad for output in f.outputs]  # output is weakref
 
             with using_config('enable_backprop', create_graph):
-                gxs = f.backward(*gys)
+                gxs = f.backward(*gys)  # 메인 backward
                 if not isinstance(gxs, tuple):
                     gxs = (gxs,)
 
@@ -225,7 +226,7 @@ class Div(Function):
         return y
 
     def backward(self, gy):
-        x0, x1 = self.inputs[0].data, self.inputs[1].data
+        x0, x1 = self.inputs
         gx0 = gy / x1
         gx1 = gy * (-x0 / x1 ** 2)
         return gx0, gx1
@@ -250,7 +251,7 @@ class Pow(Function):
         return y
 
     def backward(self, gy):
-        x = self.inputs[0].data
+        x, = self.inputs
         c = self.c
 
         gx = c * x ** (c - 1) * gy
