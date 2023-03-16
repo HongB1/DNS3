@@ -26,5 +26,5 @@ else:
         setup_variable,
         using_config,
     )
-
+    import dezero.utils
 setup_variable()

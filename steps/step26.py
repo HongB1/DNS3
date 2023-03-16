@@ -2,7 +2,7 @@ import numpy as np
 
 from dezero import Variable
 # from dezero.utils import get_dot_graph
-from dezero.util import _dot_func, _dot_var, plot_dot_graph
+from dezero.utils import _dot_func, _dot_var, plot_dot_graph
 
 # x0 = Variable(np.array(1.0))
 # x1 = Variable(np.array(1.0))

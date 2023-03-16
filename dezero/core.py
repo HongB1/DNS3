@@ -77,6 +77,15 @@ class Variable:
     def cleargrad(self):
         self.grad = None
 
+    def reshape(self, *shape):
+        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+            shape = shape[0]
+
+        return dezero.functions.reshape(self, shape)
+
+    def sum(self, axis=None, keepdims=False):
+        return dezero.functions.sum(self, axis, keepdims)
+
     def backward(self, retain_grad=False, create_graph=False):
         """backward 계산 후 미분값을 입력변수의 grad로 설정"""
         if self.grad is None:
@@ -117,6 +126,13 @@ class Variable:
             if not retain_grad:
                 for y in f.outputs:
                     y().grad = None  # y is weakref
+
+    def transpose(self):
+        return dezero.functions.transpose(self)
+
+    @property
+    def T(self):
+        return dezero.functions.transpose(self)
 
 
 def as_variable(obj):
@@ -164,11 +180,16 @@ class Function:
 # =============================================================================
 class Add(Function):
     def forward(self, x0, x1):
+        self.x0_shape, self.x1_shape = x0.shape, x1.shape
         y = x0 + x1
         return y
 
     def backward(self, gy):
-        return gy, gy
+        gx0, gx1 = gy, gy
+        if self.x0_shape != self.x1_shape:
+            gx0 = dezero.functions.sum_to(gx0, self.x0_shape)
+            gx1 = dezero.functions.sum_to(gx1, self.x1_shape)
+        return gx0, gx1
 
 
 def add(x0, x1):
@@ -230,7 +251,7 @@ class Div(Function):
     def backward(self, gy):
         x0, x1 = self.inputs
         gx0 = gy / x1
-        gx1 = gy * (-x0 / x1**2)
+        gx1 = gy * (-x0 / x1 ** 2)
         return gx0, gx1
 
 
@@ -249,7 +270,7 @@ class Pow(Function):
         self.c = c
 
     def forward(self, x):
-        y = x**self.c
+        y = x ** self.c
         return y
 
     def backward(self, gy):
